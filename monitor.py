@@ -38,7 +38,11 @@ def cheapest_offer(watch: Watch) -> tuple[Offer, float] | None:
 
 
 def process(watch: Watch) -> None:
-    result = cheapest_offer(watch)
+    try:
+        result = cheapest_offer(watch)
+    except Exception as e:
+        print(f"[!!] {watch.company:11} {watch.label}: Fehler ({e})")
+        return
     if not result:
         print(f"[--] {watch.company:11} {watch.label}: keine Angebote")
         return
