@@ -15,7 +15,7 @@ import requests
 from models import Watch
 
 SMTP_HOST = os.environ.get("SMTP_HOST")
-SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
+SMTP_PORT = int(os.environ.get("SMTP_PORT") or "587")
 SMTP_USER = os.environ.get("SMTP_USER")
 SMTP_PASS = os.environ.get("SMTP_PASS")
 ALERT_TO = os.environ.get("ALERT_TO")
