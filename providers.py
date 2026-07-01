@@ -73,15 +73,15 @@ def _duffel_offers(watch: Watch) -> list[Offer]:
         slices.append({"origin": watch.return_origin, "destination": watch.origin,
                        "departure_date": watch.return_date})
 
-    r = requests.post(
+    r = _post_with_retry(
         "https://api.duffel.com/air/offer_requests?return_offers=true",
-        headers={"Authorization": f"Bearer {token}",
-                 "Duffel-Version": "v2", "Content-Type": "application/json"},
-        json={"data": {"slices": slices,
-                       "passengers": [{"type": "adult"}] * watch.adults,
-                       "cabin_class": watch.cabin}},
-        timeout=60,
+        {"Authorization": f"Bearer {token}",
+         "Duffel-Version": "v2", "Content-Type": "application/json"},
+        {"data": {"slices": slices,
+                  "passengers": [{"type": "adult"}] * watch.adults,
+                  "cabin_class": watch.cabin}},
     )
+
     r.raise_for_status()
     offers = []
     for o in r.json()["data"].get("offers", []):
