@@ -1,0 +1,48 @@
+name: flight-price-monitor
+
+on:
+  schedule:
+    - cron: "0 6,18 * * *"      # 06:00 & 18:00 UTC (= 08:00 & 20:00 MESZ)
+  workflow_dispatch: {}          # manuell auslösbar
+
+permissions:
+  contents: write                # um die DB zurück ins Repo zu committen
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install -r requirements.txt
+
+      - name: Run monitor
+        env:
+          PROVIDER: ${{ secrets.PROVIDER }}            # "duffel"
+          DUFFEL_TOKEN: ${{ secrets.DUFFEL_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          ALERT_TO: ${{ secrets.ALERT_TO }}
+        run: python monitor.py
+
+      - name: Rebuild dashboard
+        run: |
+          python dashboard.py
+          cp dashboard.html index.html      # GitHub Pages serviert index.html
+
+      - name: Persist price history + dashboard
+        run: |
+          git config user.name  "flight-monitor"
+          git config user.email "bot@users.noreply.github.com"
+          git add flight_prices.db dashboard.html index.html
+          git commit -m "prices $(date -u +%FT%TZ)" || { echo "no change"; exit 0; }
+          git pull --rebase --autostash origin "${GITHUB_REF_NAME}" || true
+          git push
+
