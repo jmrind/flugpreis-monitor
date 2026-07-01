@@ -42,6 +42,7 @@ class Watch:
     cabin: str = "economy"
     checked_bag: bool = True
     adults: int = 1                      # = Anzahl interessierter/gebuchter Gäste
+    calc_price: float | None = None      # kalkulierter Flugpreis pro Person (Marge)
     booked: bool = False                 # echte Buchung -> Ticketing-Erinnerung
     ticketed: bool = False               # Tickets bereits ausgestellt?
     kind: str = "roundtrip"              # "roundtrip" | "oneway-domestic" ...

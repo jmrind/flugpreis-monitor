@@ -39,8 +39,12 @@ def _conn() -> sqlite3.Connection:
             company TEXT, label TEXT, origin TEXT, destination TEXT,
             depart_date TEXT, return_date TEXT, return_origin TEXT,
             carriers TEXT, cabin TEXT, adults INTEGER,
-            booked INTEGER, ticketed INTEGER, kind TEXT
+            booked INTEGER, ticketed INTEGER, kind TEXT, calc_price REAL
         )""")
+    # Migration: calc_price zu bestehender Tabelle ergänzen
+    cols = [r[1] for r in conn.execute("PRAGMA table_info(watches)")]
+    if "calc_price" not in cols:
+        conn.execute("ALTER TABLE watches ADD COLUMN calc_price REAL")
     return conn
 
 
@@ -48,15 +52,17 @@ def _upsert_watch(conn, watch: Watch) -> None:
     conn.execute("""
         INSERT INTO watches (watch_key, company, label, origin, destination,
             depart_date, return_date, return_origin, carriers, cabin, adults,
-            booked, ticketed, kind)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            booked, ticketed, kind, calc_price)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         ON CONFLICT(watch_key) DO UPDATE SET
             label=excluded.label, adults=excluded.adults,
-            booked=excluded.booked, ticketed=excluded.ticketed
+            booked=excluded.booked, ticketed=excluded.ticketed,
+            calc_price=excluded.calc_price
         """, (watch.key, watch.company, watch.label, watch.origin,
               watch.destination, watch.depart_date, watch.return_date,
               watch.return_origin, ",".join(watch.carriers), watch.cabin,
-              watch.adults, int(watch.booked), int(watch.ticketed), watch.kind))
+              watch.adults, int(watch.booked), int(watch.ticketed), watch.kind,
+              watch.calc_price))
 
 
 def record(watch: Watch, offer: Offer, per_person: float, source: str) -> None:

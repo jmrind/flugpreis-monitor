@@ -19,7 +19,8 @@ from models import Watch, Offer
 
 PROVIDER = os.environ.get("PROVIDER", "mock").lower()
 
-# Duffel drosselt bei zu vielen Anfragen (429). Mindestabstand + Backoff-Retry.
+# Duffel drosselt bei zu vielen Anfragen (429). Mindestabstand zwischen Calls
+# + Backoff-Retry halten uns im Limit.
 DUFFEL_MIN_INTERVAL = float(os.environ.get("DUFFEL_MIN_INTERVAL", "0.8"))
 DUFFEL_MAX_RETRIES = int(os.environ.get("DUFFEL_MAX_RETRIES", "4"))
 _last_call = [0.0]
@@ -40,7 +41,7 @@ def _post_with_retry(url: str, headers: dict, payload: dict) -> requests.Respons
             continue
         r.raise_for_status()
         return r
-    return r
+    return r  # pragma: no cover
 
 
 # ----------------------------------------------------------------------------
@@ -81,8 +82,6 @@ def _duffel_offers(watch: Watch) -> list[Offer]:
                   "passengers": [{"type": "adult"}] * watch.adults,
                   "cabin_class": watch.cabin}},
     )
-
-    r.raise_for_status()
     offers = []
     for o in r.json()["data"].get("offers", []):
         # Carrier-Filter

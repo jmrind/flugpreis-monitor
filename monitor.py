@@ -14,6 +14,7 @@ import argparse
 
 import config
 from models import Watch, Offer
+import providers
 from providers import fetch_offers
 import storage
 import alerts
@@ -50,7 +51,7 @@ def process(watch: Watch) -> None:
     offer, total = result
     per_person = round(total / max(watch.adults, 1), 2)
     previous_pp = storage.last_price(watch.key)
-    storage.record(watch, offer, per_person, source="mock/duffel")
+    storage.record(watch, offer, per_person, source=providers.PROVIDER)
 
     if alerts.should_alert(per_person, previous_pp, config.ALERT_DROP_PER_PERSON):
         st = storage.stats(watch.key, config.HISTORY_DAYS_FOR_STATS)

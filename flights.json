@@ -1,0 +1,229 @@
+{
+  "_hinweis": "Bearbeitbar im Bedienpanel. Jeder Eintrag = eine Reise; darunter die Termine mit optionaler Buchung (pax/booked/ticketed).",
+  "trips": [
+    {
+      "id": "rajasthan-16d",
+      "company": "Samsara",
+      "name": "Rajasthan 16d",
+      "origin": "FRA",
+      "destination": "DEL",
+      "return_origin": "DEL",
+      "carriers": [
+        "LH"
+      ],
+      "max_stops": 0,
+      "cabin": "economy",
+      "checked_bag": true,
+      "calc_price": 935,
+      "dates": [
+        {
+          "depart": "29.10.2026",
+          "return": "13.11.2026",
+          "pax": 4,
+          "booked": true,
+          "ticketed": false
+        },
+        {
+          "depart": "12.11.2026",
+          "return": "27.11.2026"
+        },
+        {
+          "depart": "03.12.2026",
+          "return": "18.12.2026"
+        },
+        {
+          "depart": "20.12.2026",
+          "return": "04.01.2027"
+        },
+        {
+          "depart": "04.02.2027",
+          "return": "19.02.2027"
+        },
+        {
+          "depart": "18.02.2027",
+          "return": "05.03.2027"
+        },
+        {
+          "depart": "04.03.2027",
+          "return": "19.03.2027"
+        },
+        {
+          "depart": "18.03.2027",
+          "return": "02.04.2027"
+        },
+        {
+          "depart": "25.03.2027",
+          "return": "09.04.2027"
+        }
+      ]
+    },
+    {
+      "id": "rajasthan-18d",
+      "company": "Samsara",
+      "name": "Rajasthan 18d",
+      "origin": "FRA",
+      "destination": "DEL",
+      "return_origin": "DEL",
+      "carriers": [
+        "LH"
+      ],
+      "max_stops": 0,
+      "cabin": "economy",
+      "checked_bag": true,
+      "calc_price": 935,
+      "dates": [
+        {
+          "depart": "06.11.2026",
+          "return": "23.11.2026"
+        },
+        {
+          "depart": "18.12.2026",
+          "return": "04.01.2027"
+        },
+        {
+          "depart": "29.01.2027",
+          "return": "15.02.2027"
+        },
+        {
+          "depart": "26.02.2027",
+          "return": "15.03.2027"
+        },
+        {
+          "depart": "12.03.2027",
+          "return": "29.03.2027"
+        },
+        {
+          "depart": "26.03.2027",
+          "return": "12.04.2027"
+        }
+      ]
+    },
+    {
+      "id": "north-india-14d",
+      "company": "Samsara",
+      "name": "North India 14d",
+      "origin": "FRA",
+      "destination": "DEL",
+      "return_origin": "DEL",
+      "carriers": [
+        "LH"
+      ],
+      "max_stops": 0,
+      "cabin": "economy",
+      "checked_bag": true,
+      "calc_price": 935,
+      "dates": [
+        {
+          "depart": "09.11.2026",
+          "return": "22.11.2026"
+        },
+        {
+          "depart": "07.12.2026",
+          "return": "20.12.2026"
+        },
+        {
+          "depart": "01.02.2027",
+          "return": "14.02.2027"
+        },
+        {
+          "depart": "15.02.2027",
+          "return": "28.02.2027"
+        },
+        {
+          "depart": "15.03.2027",
+          "return": "28.03.2027"
+        },
+        {
+          "depart": "29.03.2027",
+          "return": "11.04.2027"
+        }
+      ]
+    },
+    {
+      "id": "safari-14d",
+      "company": "Samsara",
+      "name": "Safari 14d",
+      "origin": "FRA",
+      "destination": "DEL",
+      "return_origin": "DEL",
+      "carriers": [
+        "LH"
+      ],
+      "max_stops": 0,
+      "cabin": "economy",
+      "checked_bag": true,
+      "calc_price": 935,
+      "dates": [
+        {
+          "depart": "07.11.2026",
+          "return": "20.11.2026"
+        },
+        {
+          "depart": "06.02.2027",
+          "return": "19.02.2027"
+        },
+        {
+          "depart": "06.03.2027",
+          "return": "19.03.2027"
+        },
+        {
+          "depart": "24.03.2027",
+          "return": "06.04.2027"
+        },
+        {
+          "depart": "10.04.2027",
+          "return": "23.04.2027"
+        },
+        {
+          "depart": "01.05.2027",
+          "return": "14.05.2027"
+        }
+      ]
+    },
+    {
+      "id": "south-india-16d",
+      "company": "Samsara",
+      "name": "South India 16d",
+      "origin": "FRA",
+      "destination": "MAA",
+      "return_origin": "COK",
+      "carriers": [
+        "EK",
+        "QR"
+      ],
+      "max_stops": 1,
+      "cabin": "economy",
+      "checked_bag": true,
+      "calc_price": 835,
+      "dates": [
+        {
+          "depart": "07.11.2026",
+          "return": "22.11.2026",
+          "pax": 2,
+          "booked": true,
+          "ticketed": false
+        },
+        {
+          "depart": "19.12.2026",
+          "return": "03.01.2027"
+        },
+        {
+          "depart": "09.01.2027",
+          "return": "24.01.2027"
+        },
+        {
+          "depart": "13.02.2027",
+          "return": "28.02.2027"
+        },
+        {
+          "depart": "27.02.2027",
+          "return": "14.03.2027"
+        },
+        {
+          "depart": "13.03.2027",
+          "return": "28.03.2027"
+        }
+      ]
+    }
+  ]
+}
