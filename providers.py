@@ -10,6 +10,7 @@ fetch_offers(watch) gibt immer eine Liste normalisierter Offer-Objekte zurück.
 
 from __future__ import annotations
 import os
+import time
 import hashlib
 
 import requests
@@ -17,6 +18,29 @@ import requests
 from models import Watch, Offer
 
 PROVIDER = os.environ.get("PROVIDER", "mock").lower()
+
+# Duffel drosselt bei zu vielen Anfragen (429). Mindestabstand + Backoff-Retry.
+DUFFEL_MIN_INTERVAL = float(os.environ.get("DUFFEL_MIN_INTERVAL", "0.8"))
+DUFFEL_MAX_RETRIES = int(os.environ.get("DUFFEL_MAX_RETRIES", "4"))
+_last_call = [0.0]
+
+
+def _post_with_retry(url: str, headers: dict, payload: dict) -> requests.Response:
+    for attempt in range(DUFFEL_MAX_RETRIES + 1):
+        wait = DUFFEL_MIN_INTERVAL - (time.time() - _last_call[0])
+        if wait > 0:
+            time.sleep(wait)
+        r = requests.post(url, headers=headers, json=payload, timeout=60)
+        _last_call[0] = time.time()
+        if r.status_code == 429 or r.status_code >= 500:
+            if attempt == DUFFEL_MAX_RETRIES:
+                r.raise_for_status()
+            retry_after = float(r.headers.get("Retry-After", 2 ** attempt))
+            time.sleep(min(retry_after, 30))
+            continue
+        r.raise_for_status()
+        return r
+    return r
 
 
 # ----------------------------------------------------------------------------
