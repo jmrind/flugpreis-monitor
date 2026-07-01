@@ -1,0 +1,142 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flugpreis-Monitor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+:root{
+  --paper:#F4F2EC; --card:#FFFFFF; --ink:#22323C; --muted:#6C7680;
+  --line:#E6E1D6; --accent:#2B4C7E; --brass:#A98B4B;
+  --good:#2F7A57; --warn:#B4623A; --alert:#9B2D3A;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);
+  font-family:Inter,system-ui,sans-serif;font-size:14px;line-height:1.5;
+  -webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px 64px}
+header{padding:40px 0 22px;border-bottom:1px solid var(--line)}
+.eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--brass);font-weight:600}
+h1{font-family:Fraunces,serif;font-weight:500;font-size:30px;letter-spacing:-.01em;
+  margin:6px 0 2px}
+.gen{color:var(--muted);font-size:12.5px}
+/* summary */
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;
+  background:var(--line);border:1px solid var(--line);border-radius:14px;
+  overflow:hidden;margin:26px 0 8px}
+.tile{background:var(--card);padding:18px 20px}
+.tile .k{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.tile .v{font-family:Fraunces,serif;font-size:26px;font-weight:500;margin-top:6px}
+.tile .s{font-size:12px;color:var(--muted);margin-top:2px}
+/* filter */
+.bar{display:flex;align-items:center;justify-content:space-between;
+  margin:26px 0 14px;flex-wrap:wrap;gap:12px}
+.seg{display:inline-flex;background:var(--card);border:1px solid var(--line);
+  border-radius:999px;padding:3px}
+.seg button{border:0;background:transparent;color:var(--muted);cursor:pointer;
+  font:inherit;padding:7px 16px;border-radius:999px}
+.seg button.on{background:var(--ink);color:#fff}
+.count{color:var(--muted);font-size:13px}
+/* grid + card */
+.grid{display:grid;gap:18px;grid-template-columns:repeat(auto-fill,minmax(330px,1fr))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;
+  padding:20px;box-shadow:0 1px 2px rgba(34,50,60,.04),0 8px 24px rgba(34,50,60,.04);
+  opacity:0;transform:translateY(6px);animation:rise .5s ease forwards}
+@keyframes rise{to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.card{animation:none;opacity:1;transform:none}}
+.c-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.trip{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--brass);
+  font-weight:600}
+.route{font-family:Fraunces,serif;font-size:20px;font-weight:500;margin:3px 0 1px}
+.sub{color:var(--muted);font-size:12.5px}
+.chip{font-size:11.5px;font-weight:500;padding:5px 10px;border-radius:999px;
+  white-space:nowrap;border:1px solid transparent}
+.chip.scheduled{background:#EEF2F7;color:var(--accent);border-color:#DEE6EF}
+.chip.soon{background:#F7EDE6;color:var(--warn);border-color:#ECD9CB}
+.chip.overdue{background:#F6E7E9;color:var(--alert);border-color:#EACDD1}
+.chip.ticketed{background:#E9F1EC;color:var(--good);border-color:#D4E6DB}
+.chip.monitor{background:#F1EFE9;color:var(--muted);border-color:var(--line)}
+.price{display:flex;align-items:baseline;gap:10px;margin:16px 0 2px}
+.price .now{font-family:Fraunces,serif;font-size:30px;font-weight:500;letter-spacing:-.01em}
+.price .unit{color:var(--muted);font-size:12.5px}
+.delta{font-size:13px;font-weight:500}
+.delta.dn{color:var(--good)} .delta.up{color:var(--warn)}
+.meta{display:flex;gap:16px;color:var(--muted);font-size:12.5px;margin:6px 0 12px;
+  flex-wrap:wrap}
+.meta b{color:var(--ink);font-weight:600}
+.pax{color:var(--ink)}
+canvas{max-height:120px}
+footer{margin-top:34px;color:var(--muted);font-size:12px;text-align:center}
+</style></head>
+<body><div class="wrap">
+<header>
+  <div class="eyebrow">Fernreisen · Preisüberwachung</div>
+  <h1>Flugpreis-Monitor</h1>
+  <div class="gen">Stand 01.07.2026 · Preise pro Gast in EUR</div>
+</header>
+
+<div class="summary" id="summary"></div>
+
+<div class="bar">
+  <div class="seg" id="seg"></div>
+  <div class="count" id="count"></div>
+</div>
+
+<div class="grid" id="grid"></div>
+<footer>Ticketing-Deadline = Abflug − 25 Tage (~3,5 Wochen). Historie ist vollständig gespeichert.</footer>
+</div>
+<script>
+const CARDS=[{"id": "036dd174958d", "company": "Samsara", "kind": "roundtrip", "route": "FRA \u2192 DEL", "sub": "hin 2027-02-06  \u00b7  zur\u00fcck DEL\u2192FRA 2027-02-19", "trip": "Safari 14d", "pax": 2, "state": "monitor", "state_label": "nur beobachtet", "current": 614.0, "avg": 622.71, "min": 592.0, "max": 683.0, "n": 7, "vs_avg": -8.71, "labels": ["07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:15"], "values": [594.0, 662.0, 597.0, 683.0, 617.0, 592.0, 614.0]}, {"id": "06ac3d7c9bc4", "company": "Samsara", "kind": "roundtrip", "route": "FRA \u2192 DEL", "sub": "hin 2027-03-25  \u00b7  zur\u00fcck DEL\u2192FRA 2027-04-09", "trip": "Rajasthan 16d", "pax": 2, "state": "monitor", "state_label": "nur beobachtet", "current": 659.0, "avg": 652.43, "min": 518.0, "max": 701.0, "n": 7, "vs_avg": 6.57, "labels": ["07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:15"], "values": [681.0, 689.0, 701.0, 690.0, 629.0, 518.0, 659.0]}, {"id": "39045d5e24ec", "company": "Samsara", "kind": "roundtrip", "route": "FRA \u2192 DEL", "sub": "hin 2026-12-20  \u00b7  zur\u00fcck DEL\u2192FRA 2027-01-04", "trip": "Rajasthan 16d", "pax": 2, "state": "monitor", "state_label": "nur beobachtet", "current": 687.0, "avg": 642.14, "min": 525.0, "max": 719.0, "n": 7, "vs_avg": 44.86, "labels": ["07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:15"], "values": [617.0, 653.0, 593.0, 701.0, 719.0, 525.0, 687.0]}, {"id": "3a452de9b13a", "company": "Samsara", "kind": "roundtrip", "route": "FRA \u2192 MAA", "sub": "hin 2027-01-09  \u00b7  zur\u00fcck COK\u2192FRA 2027-01-24", "trip": "South India 16d", "pax": 2, "state": "monitor", "state_label": "nur beobachtet", "current": 730.0, "avg": 700.14, "min": 655.0, "max": 776.0, "n": 7, "vs_avg": 29.86, "labels": ["07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:15"], "values": [694.0, 717.0, 655.0, 667.0, 776.0, 662.0, 730.0]}, {"id": "3aa03d3aa68b", "company": "Samsara", "kind": "roundtrip", "route": "FRA \u2192 DEL", "sub": "hin 2026-12-07  \u00b7  zur\u00fcck DEL\u2192FRA 2026-12-20", "trip": "North India 14d", "pax": 2, "state": "monitor", "state_label": "nur beobachtet", "current": 586.0, "avg": 619.0, "min": 578.0, "max": 682.0, "n": 7, "vs_avg": -33.0, "labels": ["07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:15"], "values": [586.0, 682.0, 670.0, 594.0, 637.0, 578.0, 586.0]}, {"id": "4ae5d10a4a28", "company": "Samsara", "kind": "roundtrip", "route": "FRA \u2192 DEL", "sub": "hin 2027-03-18  \u00b7  zur\u00fcck DEL\u2192FRA 2027-04-02", "trip": "Rajasthan 16d", "pax": 2, "state": "monitor", "state_label": "nur beobachtet", "current": 694.0, "avg": 622.0, "min": 586.0, "max": 694.0, "n": 7, "vs_avg": 72.0, "labels": ["07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:15"], "values": [612.0, 628.0, 586.0, 606.0, 599.0, 629.0, 694.0]}, {"id": "4ca4da8230c2", "company": "Samsara", "kind": "roundtrip", "route": "FRA \u2192 MAA", "sub": "hin 2026-11-07  \u00b7  zur\u00fcck COK\u2192FRA 2026-11-22", "trip": "South India 16d", "pax": 2, "state": "scheduled", "state_label": "Ticketing bis 13.10.", "current": 772.0, "avg": 731.29, "min": 627.0, "max": 788.0, "n": 7, "vs_avg": 40.71, "labels": ["07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:15"], "values": [751.0, 720.0, 758.0, 788.0, 703.0, 627.0, 772.0]}, {"id": "4f39bf957232", "company": "Samsara", "kind": "roundtrip", "route": "FRA \u2192 MAA", "sub": "hin 2027-02-13  \u00b7  zur\u00fcck COK\u2192FRA 2027-02-28", "trip": "South India 16d", "pax": 2, "state": "monitor", "state_label": "nur beobachtet", "current": 652.0, "avg": 695.0, "min": 577.0, "max": 769.0, "n": 7, "vs_avg": -43.0, "labels": ["07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:15"], "values": [685.0, 769.0, 750.0, 704.0, 728.0, 577.0, 652.0]}, {"id": "50753542ea80", "company": "Samsara", "kind": "roundtrip", "route": "FRA \u2192 DEL", "sub": "hin 2027-03-06  \u00b7  zur\u00fcck DEL\u2192FRA 2027-03-19", "trip": "Safari 14d", "pax": 2, "state": "monitor", "state_label": "nur beobachtet", "current": 629.0, "avg": 620.29, "min": 507.0, "max": 711.0, "n": 7, "vs_avg": 8.71, "labels": ["07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:15"], "values": [683.0, 601.0, 580.0, 631.0, 711.0, 507.0, 629.0]}, {"id": "512f26eb8a6f", "company": "Samsara", "kind": "roundtrip", "route": "FRA \u2192 DEL", "sub": "hin 2026-12-03  \u00b7  zur\u00fcck DEL\u2192FRA 2026-12-18", "trip": "Rajasthan 16d", "pax": 2, "state": "monitor", "state_label": "nur beobachtet", "current": 706.0, "avg": 618.14, "min": 537.0, "max": 706.0, "n": 7, "vs_avg": 87.86, "labels": ["07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:15"], "values": [637.0, 616.0, 648.0, 599.0, 584.0, 537.0, 706.0]}, {"id": "531d3b3897aa", "company": "Samsara", "kind": "roundtrip", "route": "FRA \u2192 DEL", "sub": "hin 2026-11-07  \u00b7  zur\u00fcck DEL\u2192FRA 2026-11-20", "trip": "Safari 14d", "pax": 2, "state": "monitor", "state_label": "nur beobachtet", "current": 681.0, "avg": 650.0, "min": 570.0, "max": 716.0, "n": 7, "vs_avg": 31.0, "labels": ["07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:15"], "values": [716.0, 650.0, 644.0, 590.0, 699.0, 570.0, 681.0]}, {"id": "5e4eb82ead1a", "company": "Samsara", "kind": "roundtrip", "route": "FRA \u2192 DEL", "sub": "hin 2027-03-15  \u00b7  zur\u00fcck DEL\u2192FRA 2027-03-28", "trip": "North India 14d", "pax": 2, "state": "monitor", "state_label": "nur beobachtet", "current": 655.0, "avg": 632.57, "min": 584.0, "max": 684.0, "n": 7, "vs_avg": 22.43, "labels": ["07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:15"], "values": [584.0, 684.0, 652.0, 633.0, 612.0, 608.0, 655.0]}, {"id": "63b3ddc90f8b", "company": "Samsara", "kind": "roundtrip", "route": "FRA \u2192 DEL", "sub": "hin 2027-02-04  \u00b7  zur\u00fcck DEL\u2192FRA 2027-02-19", "trip": "Rajasthan 16d", "pax": 2, "state": "monitor", "state_label": "nur beobachtet", "current": 681.0, "avg": 650.43, "min": 508.0, "max": 712.0, "n": 7, "vs_avg": 30.57, "labels": ["07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:15"], "values": [654.0, 712.0, 637.0, 662.0, 699.0, 508.0, 681.0]}, {"id": "79706e729d87", "company": "Samsara", "kind": "roundtrip", "route": "FRA \u2192 DEL", "sub": "hin 2026-12-18  \u00b7  zur\u00fcck DEL\u2192FRA 2027-01-04", "trip": "Rajasthan 18d", "pax": 2, "state": "monitor", "state_label": "nur beobachtet", "current": 688.0, "avg": 628.43, "min": 588.0, "max": 688.0, "n": 7, "vs_avg": 59.57, "labels": ["07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:15"], "values": [665.0, 588.0, 634.0, 623.0, 599.0, 602.0, 688.0]}, {"id": "96835ae713a9", "company": "Samsara", "kind": "roundtrip", "route": "FRA \u2192 DEL", "sub": "hin 2027-03-29  \u00b7  zur\u00fcck DEL\u2192FRA 2027-04-11", "trip": "North India 14d", "pax": 2, "state": "monitor", "state_label": "nur beobachtet", "current": 610.0, "avg": 620.29, "min": 562.0, "max": 708.0, "n": 7, "vs_avg": -10.29, "labels": ["07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:15"], "values": [697.0, 587.0, 592.0, 586.0, 708.0, 562.0, 610.0]}, {"id": "9faf77f934c5", "company": "Samsara", "kind": "roundtrip", "route": "FRA \u2192 DEL", "sub": "hin 2027-02-26  \u00b7  zur\u00fcck DEL\u2192FRA 2027-03-15", "trip": "Rajasthan 18d", "pax": 2, "state": "monitor", "state_label": "nur beobachtet", "current": 651.0, "avg": 641.0, "min": 542.0, "max": 679.0, "n": 7, "vs_avg": 10.0, "labels": ["07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:15"], "values": [671.0, 679.0, 674.0, 651.0, 619.0, 542.0, 651.0]}, {"id": "a014032a042e", "company": "Samsara", "kind": "roundtrip", "route": "FRA \u2192 DEL", "sub": "hin 2027-05-01  \u00b7  zur\u00fcck DEL\u2192FRA 2027-05-14", "trip": "Safari 14d", "pax": 2, "state": "monitor", "state_label": "nur beobachtet", "current": 586.0, "avg": 613.14, "min": 567.0, "max": 710.0, "n": 7, "vs_avg": -27.14, "labels": ["07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:15"], "values": [583.0, 710.0, 586.0, 615.0, 645.0, 567.0, 586.0]}, {"id": "a5253ba9108f", "company": "Samsara", "kind": "roundtrip", "route": "FRA \u2192 DEL", "sub": "hin 2027-04-10  \u00b7  zur\u00fcck DEL\u2192FRA 2027-04-23", "trip": "Safari 14d", "pax": 2, "state": "monitor", "state_label": "nur beobachtet", "current": 674.0, "avg": 661.0, "min": 619.0, "max": 697.0, "n": 7, "vs_avg": 13.0, "labels": ["07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:15"], "values": [673.0, 686.0, 619.0, 642.0, 697.0, 636.0, 674.0]}, {"id": "a820bb67b141", "company": "Samsara", "kind": "roundtrip", "route": "FRA \u2192 MAA", "sub": "hin 2027-03-13  \u00b7  zur\u00fcck COK\u2192FRA 2027-03-28", "trip": "South India 16d", "pax": 2, "state": "monitor", "state_label": "nur beobachtet", "current": 708.0, "avg": 693.14, "min": 605.0, "max": 752.0, "n": 7, "vs_avg": 14.86, "labels": ["07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:15"], "values": [752.0, 662.0, 665.0, 716.0, 744.0, 605.0, 708.0]}, {"id": "ab203f55fdf4", "company": "Samsara", "kind": "roundtrip", "route": "FRA \u2192 DEL", "sub": "hin 2026-11-12  \u00b7  zur\u00fcck DEL\u2192FRA 2026-11-27", "trip": "Rajasthan 16d", "pax": 2, "state": "monitor", "state_label": "nur beobachtet", "current": 713.0, "avg": 658.0, "min": 552.0, "max": 713.0, "n": 7, "vs_avg": 55.0, "labels": ["07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:15"], "values": [661.0, 638.0, 711.0, 637.0, 694.0, 552.0, 713.0]}, {"id": "ad5e8ef60093", "company": "Samsara", "kind": "roundtrip", "route": "FRA \u2192 DEL", "sub": "hin 2027-01-29  \u00b7  zur\u00fcck DEL\u2192FRA 2027-02-15", "trip": "Rajasthan 18d", "pax": 2, "state": "monitor", "state_label": "nur beobachtet", "current": 718.0, "avg": 650.57, "min": 553.0, "max": 718.0, "n": 7, "vs_avg": 67.43, "labels": ["07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:15"], "values": [707.0, 618.0, 664.0, 627.0, 667.0, 553.0, 718.0]}, {"id": "ad883bd07021", "company": "Samsara", "kind": "roundtrip", "route": "FRA \u2192 DEL", "sub": "hin 2027-02-01  \u00b7  zur\u00fcck DEL\u2192FRA 2027-02-14", "trip": "North India 14d", "pax": 2, "state": "monitor", "state_label": "nur beobachtet", "current": 682.0, "avg": 625.0, "min": 526.0, "max": 682.0, "n": 7, "vs_avg": 57.0, "labels": ["07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:15"], "values": [626.0, 638.0, 666.0, 608.0, 629.0, 526.0, 682.0]}, {"id": "b753051dc126", "company": "Samsara", "kind": "roundtrip", "route": "FRA \u2192 DEL", "sub": "hin 2026-11-06  \u00b7  zur\u00fcck DEL\u2192FRA 2026-11-23", "trip": "Rajasthan 18d", "pax": 2, "state": "monitor", "state_label": "nur beobachtet", "current": 631.0, "avg": 626.57, "min": 574.0, "max": 660.0, "n": 7, "vs_avg": 4.43, "labels": ["07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:15"], "values": [652.0, 656.0, 598.0, 660.0, 615.0, 574.0, 631.0]}, {"id": "bd4ccae72f29", "company": "Samsara", "kind": "roundtrip", "route": "FRA \u2192 DEL", "sub": "hin 2026-11-09  \u00b7  zur\u00fcck DEL\u2192FRA 2026-11-22", "trip": "North India 14d", "pax": 2, "state": "monitor", "state_label": "nur beobachtet", "current": 616.0, "avg": 626.0, "min": 533.0, "max": 716.0, "n": 7, "vs_avg": -10.0, "labels": ["07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:15"], "values": [652.0, 608.0, 716.0, 671.0, 586.0, 533.0, 616.0]}, {"id": "bdcb6d3187e0", "company": "Samsara", "kind": "roundtrip", "route": "FRA \u2192 DEL", "sub": "hin 2027-03-12  \u00b7  zur\u00fcck DEL\u2192FRA 2027-03-29", "trip": "Rajasthan 18d", "pax": 2, "state": "monitor", "state_label": "nur beobachtet", "current": 646.0, "avg": 646.29, "min": 542.0, "max": 705.0, "n": 7, "vs_avg": -0.29, "labels": ["07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:15"], "values": [705.0, 689.0, 650.0, 670.0, 622.0, 542.0, 646.0]}, {"id": "c5967211c7dc", "company": "Samsara", "kind": "roundtrip", "route": "FRA \u2192 DEL", "sub": "hin 2026-10-29  \u00b7  zur\u00fcck DEL\u2192FRA 2026-11-13", "trip": "Rajasthan 16d", "pax": 4, "state": "scheduled", "state_label": "Ticketing bis 04.10.", "current": 710.0, "avg": 644.71, "min": 533.0, "max": 712.0, "n": 7, "vs_avg": 65.29, "labels": ["07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:15"], "values": [634.0, 712.0, 635.0, 657.0, 632.0, 533.0, 710.0]}, {"id": "cd13429c5728", "company": "Samsara", "kind": "roundtrip", "route": "FRA \u2192 DEL", "sub": "hin 2027-02-18  \u00b7  zur\u00fcck DEL\u2192FRA 2027-03-05", "trip": "Rajasthan 16d", "pax": 2, "state": "monitor", "state_label": "nur beobachtet", "current": 677.0, "avg": 647.29, "min": 527.0, "max": 713.0, "n": 7, "vs_avg": 29.71, "labels": ["07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:15"], "values": [700.0, 647.0, 610.0, 657.0, 713.0, 527.0, 677.0]}, {"id": "dcdb68e1e753", "company": "Samsara", "kind": "roundtrip", "route": "FRA \u2192 MAA", "sub": "hin 2027-02-27  \u00b7  zur\u00fcck COK\u2192FRA 2027-03-14", "trip": "South India 16d", "pax": 2, "state": "monitor", "state_label": "nur beobachtet", "current": 708.0, "avg": 718.29, "min": 582.0, "max": 782.0, "n": 7, "vs_avg": -10.29, "labels": ["07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:15"], "values": [782.0, 773.0, 735.0, 682.0, 766.0, 582.0, 708.0]}, {"id": "e0690cac97e5", "company": "Samsara", "kind": "roundtrip", "route": "FRA \u2192 MAA", "sub": "hin 2026-12-19  \u00b7  zur\u00fcck COK\u2192FRA 2027-01-03", "trip": "South India 16d", "pax": 2, "state": "monitor", "state_label": "nur beobachtet", "current": 711.0, "avg": 684.43, "min": 574.0, "max": 740.0, "n": 7, "vs_avg": 26.57, "labels": ["07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:15"], "values": [655.0, 740.0, 729.0, 654.0, 728.0, 574.0, 711.0]}, {"id": "e51e2ce330fe", "company": "Samsara", "kind": "roundtrip", "route": "FRA \u2192 DEL", "sub": "hin 2027-03-04  \u00b7  zur\u00fcck DEL\u2192FRA 2027-03-19", "trip": "Rajasthan 16d", "pax": 2, "state": "monitor", "state_label": "nur beobachtet", "current": 687.0, "avg": 652.0, "min": 585.0, "max": 717.0, "n": 7, "vs_avg": 35.0, "labels": ["07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:15"], "values": [641.0, 617.0, 688.0, 717.0, 585.0, 629.0, 687.0]}, {"id": "e6ad0f5a3d47", "company": "Samsara", "kind": "roundtrip", "route": "FRA \u2192 DEL", "sub": "hin 2027-03-26  \u00b7  zur\u00fcck DEL\u2192FRA 2027-04-12", "trip": "Rajasthan 18d", "pax": 2, "state": "monitor", "state_label": "nur beobachtet", "current": 603.0, "avg": 641.43, "min": 596.0, "max": 706.0, "n": 7, "vs_avg": -38.43, "labels": ["07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:15"], "values": [706.0, 691.0, 609.0, 596.0, 685.0, 600.0, 603.0]}, {"id": "eeb3fd5042ce", "company": "Samsara", "kind": "roundtrip", "route": "FRA \u2192 DEL", "sub": "hin 2027-02-15  \u00b7  zur\u00fcck DEL\u2192FRA 2027-02-28", "trip": "North India 14d", "pax": 2, "state": "monitor", "state_label": "nur beobachtet", "current": 588.0, "avg": 619.14, "min": 567.0, "max": 703.0, "n": 7, "vs_avg": -31.14, "labels": ["07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:15"], "values": [620.0, 606.0, 601.0, 703.0, 649.0, 567.0, 588.0]}, {"id": "f503fc2cf716", "company": "Samsara", "kind": "roundtrip", "route": "FRA \u2192 DEL", "sub": "hin 2027-03-24  \u00b7  zur\u00fcck DEL\u2192FRA 2027-04-06", "trip": "Safari 14d", "pax": 2, "state": "monitor", "state_label": "nur beobachtet", "current": 605.0, "avg": 645.0, "min": 565.0, "max": 717.0, "n": 7, "vs_avg": -40.0, "labels": ["07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:10", "07-01 12:15"], "values": [691.0, 675.0, 717.0, 669.0, 593.0, 565.0, 605.0]}], S={"watched": 33, "booked": 2, "lows": 0, "next_deadline": "04.10.2026", "next_deadline_sub": "Samsara \u00b7 FRA\u2192DEL"};
+document.getElementById('summary').innerHTML=`
+ <div class="tile"><div class="k">Beobachtet</div><div class="v">${S.watched}</div><div class="s">Verbindungen</div></div>
+ <div class="tile"><div class="k">Gebucht</div><div class="v">${S.booked}</div><div class="s">mit Ticketing-Frist</div></div>
+ <div class="tile"><div class="k">Tiefstwerte jetzt</div><div class="v">${S.lows}</div><div class="s">aktuell am günstigsten</div></div>
+ <div class="tile"><div class="k">Nächste Deadline</div><div class="v">${S.next_deadline}</div><div class="s">${S.next_deadline_sub}</div></div>`;
+
+const companies=[...new Set(CARDS.map(c=>c.company))];
+const seg=document.getElementById('seg');
+['alle',...companies].forEach((c,i)=>{
+  const b=document.createElement('button');b.textContent=c;
+  if(i===0)b.classList.add('on');b.onclick=()=>{document.querySelectorAll('.seg button').forEach(x=>x.classList.remove('on'));b.classList.add('on');render(c==='alle'?'':c);};
+  seg.appendChild(b);
+});
+
+function render(f){
+  const grid=document.getElementById('grid');grid.innerHTML='';
+  const items=CARDS.filter(c=>!f||c.company===f);
+  document.getElementById('count').textContent=`${items.length} von ${CARDS.length}`;
+  items.forEach((c,idx)=>{
+    const dn=c.vs_avg<=0;
+    const el=document.createElement('div');el.className='card';
+    el.style.animationDelay=(Math.min(idx,12)*22)+'ms';
+    el.innerHTML=`
+     <div class="c-top">
+       <div><div class="trip">${c.company} · ${c.trip}</div>
+        <div class="route">${c.route}</div><div class="sub">${c.sub}</div></div>
+       <span class="chip ${c.state}">${c.state_label}</span>
+     </div>
+     <div class="price"><span class="now">${c.current} €</span>
+       <span class="unit">/ Gast</span>
+       <span class="delta ${dn?'dn':'up'}">${dn?'▼':'▲'} ${dn?'':'+'}${c.vs_avg} € ggü. Schnitt</span></div>
+     <div class="meta"><span>Schnitt <b>${c.avg} €</b></span>
+       <span>Spanne <b>${c.min}–${c.max} €</b></span>
+       <span class="pax">Gäste <b>${c.pax}</b></span>
+       <span>${c.n} Messungen</span></div>
+     <canvas id="cv_${c.id}"></canvas>`;
+    grid.appendChild(el);
+    new Chart(document.getElementById('cv_'+c.id),{type:'line',
+      data:{labels:c.labels,datasets:[{data:c.values,borderColor:'#2B4C7E',
+        backgroundColor:'rgba(43,76,126,.08)',fill:true,tension:.3,
+        pointRadius:0,borderWidth:2}]},
+      options:{plugins:{legend:{display:false},
+        tooltip:{callbacks:{label:x=>x.parsed.y+' €'}}},
+        scales:{x:{ticks:{color:'#9AA0A6',maxTicksLimit:5,font:{size:10}},
+          grid:{display:false}},
+        y:{ticks:{color:'#9AA0A6',maxTicksLimit:4,font:{size:10}},
+          grid:{color:'#EFEBE1'}}}}});
+  });
+}
+render('');
+</script></body></html>
